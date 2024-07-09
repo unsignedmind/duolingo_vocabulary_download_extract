@@ -9,11 +9,11 @@ function getLanguagesFromURL() {
 // Function to process a vocabulary item
 function processVocabularyItem(item, currentSection) {
     let spanItem = item.querySelector('span.wA');
-    if (spanItem) {
+    let speakItem = item.querySelector('span.speak.xs.voice');
+    if (spanItem && speakItem) {
         let title = spanItem.getAttribute('title');
         let german = title.replace(/\[.*?\]/, '').trim().replace(/, /g, '|');
-        let spanishMatch = title.match(/\[(.*?)\]/);
-        let spanish = spanishMatch ? spanishMatch[1] : '';
+        let spanish = speakItem.innerText.trim();
         let typeElement = item.querySelector('small.cCCC.wP');
         let type = typeElement ? typeElement.innerText.replace('· ', '').trim() : '';
         return [currentSection, spanish, german, type];
@@ -46,7 +46,7 @@ function convertToCSV(words, includeSection, includeType, languages) {
     const [sourceLang, targetLang] = languages;
     let headers = includeSection ? `Section,${targetLang},${sourceLang}` : `${targetLang},${sourceLang}`;
     headers = includeType ? headers + ",Type" : headers;
-    let csvContent = `data:text/csv;charset=utf-8,${headers}\n`;
+    let csvContent = `\uFEFF${headers}\n`;
     words.forEach(wordArray => {
         let row = includeSection ? wordArray.join(",") : wordArray.slice(1).join(",");
         row = includeType ? row : row.replace(/,([^,]*)$/, ''); // Remove type if not included
@@ -55,15 +55,14 @@ function convertToCSV(words, includeSection, includeType, languages) {
     return csvContent;
 }
 
-// Function to create a download link for the CSV file
+// Function to create a download link for the CSV file using Data URI
 function createDownloadLink(csvContent, sectionName = "", includeSection = false, includeType = false) {
-    let encodedUri = encodeURI(csvContent);
-    let link = document.createElement("a");
     const [sourceLang, targetLang] = getLanguagesFromURL();
     let fileName = sectionName ? 
         `vocabulary_${sourceLang}_${targetLang}_${sectionName}_${includeSection ? 'withSection' : 'noSection'}_${includeType ? 'withType' : 'noType'}.csv` : 
         `vocabulary_${sourceLang}_${targetLang}_${includeSection ? 'withSection' : 'noSection'}_${includeType ? 'withType' : 'noType'}.csv`;
-    link.setAttribute("href", encodedUri);
+    let link = document.createElement("a");
+    link.setAttribute("href", 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent));
     link.setAttribute("download", fileName);
     link.innerText = sectionName ? `Download ${sectionName}` : "Download All";
     link.style.backgroundColor = "#20a8e9";
@@ -131,7 +130,7 @@ function main() {
     for (let sectionName in sections) {
         let sectionWords = sections[sectionName].words;
         let sectionLink = createDownloadLink(convertToCSV(sectionWords, false, true, languages), sectionName, false, true);
-        let sectionCheckboxLabel = createCheckbox(`section name(${sectionName})`);
+        let sectionCheckboxLabel = createCheckbox(sectionName);
         let typeCheckboxLabel = createCheckbox("type of word");
         appendLinkAndCheckboxesToSection(sectionLink, sectionCheckboxLabel, typeCheckboxLabel, sections[sectionName].headerElement);
 
@@ -141,11 +140,9 @@ function main() {
             let includeSection = sectionCheckboxLabel.querySelector('input').checked;
             let includeType = typeCheckboxLabel.querySelector('input').checked;
             let sectionCsvContent = convertToCSV(sectionWords, includeSection, includeType, languages);
-            let encodedUri = encodeURI(sectionCsvContent);
-            let fileName = `vocabulary_${languages[0]}_${languages[1]}_${sectionName}_${includeSection ? 'withSection' : 'noSection'}_${includeType ? 'withType' : 'noType'}.csv`;
             let tempLink = document.createElement('a');
-            tempLink.setAttribute('href', encodedUri);
-            tempLink.setAttribute('download', fileName);
+            tempLink.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(sectionCsvContent));
+            tempLink.setAttribute('download', `vocabulary_${languages[0]}_${languages[1]}_${sectionName}_${includeSection ? 'withSection' : 'noSection'}_${includeType ? 'withType' : 'noType'}.csv`);
             tempLink.click();
         });
     }
@@ -156,11 +153,9 @@ function main() {
         let includeAllSections = fullSectionCheckboxLabel.querySelector('input').checked;
         let includeType = fullTypeCheckboxLabel.querySelector('input').checked;
         let selectedCsvContent = convertToCSV(words, includeAllSections, includeType, languages);
-        let encodedUri = encodeURI(selectedCsvContent);
-        let fileName = `vocabulary_${languages[0]}_${languages[1]}_${includeAllSections ? 'withSection' : 'noSection'}_${includeType ? 'withType' : 'noType'}.csv`;
         let tempLink = document.createElement('a');
-        tempLink.setAttribute('href', encodedUri);
-        tempLink.setAttribute('download', fileName);
+        tempLink.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(selectedCsvContent));
+        tempLink.setAttribute('download', `vocabulary_${languages[0]}_${languages[1]}_${includeAllSections ? 'withSection' : 'noSection'}_${includeType ? 'withType' : 'noType'}.csv`);
         tempLink.click();
     });
 }
