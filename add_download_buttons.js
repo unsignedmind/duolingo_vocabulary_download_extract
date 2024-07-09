@@ -135,7 +135,7 @@ function main() {
     for (let sectionName in sections) {
         let sectionWords = sections[sectionName].words;
         let sectionLink = createDownloadLink(convertToCSV(sectionWords, false, true, false, languages), sectionName, false, true, false);
-        let sectionCheckboxLabel = createCheckbox(sectionName);
+        let sectionCheckboxLabel = createCheckbox(`section name (${sectionName})`);
         let typeCheckboxLabel = createCheckbox("type of word");
         appendLinkAndCheckboxesToSection(sectionLink, sectionCheckboxLabel, typeCheckboxLabel, sections[sectionName].headerElement);
 
