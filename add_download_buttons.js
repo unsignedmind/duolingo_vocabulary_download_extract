@@ -25,7 +25,7 @@ function extractVocabularyDetails(item, currentSection) {
         const targetLanguageWord = targetLanguageElement.innerText.trim();
         const wordTypeElement = item.querySelector(WORD_TYPE_ELEMENT_CLASS_NAME);
         const type = wordTypeElement ? wordTypeElement.innerText.replace('· ', '').trim() : '';
-        // return [currentSection, targetLanguageWord, sourceLanguageWords, type];
+
         return {
             section: currentSection,
             targetLangWord: targetLanguageWord,
