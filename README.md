@@ -1,0 +1,2 @@
+# duolingo_vocabulary_download_extract
+Duolingo Vocabulary Download Extract
