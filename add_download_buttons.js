@@ -41,11 +41,6 @@ function extractWords() {
     return words;
 }
 
-// Function to generate a random ID
-function generateRandomID() {
-    return Math.random().toString(36).substr(2, 9);
-}
-
 // Function to convert array of words to CSV format
 function convertToCSV(words, includeSection, includeType, includeID, languages) {
     const [sourceLang, targetLang] = languages;
@@ -53,8 +48,8 @@ function convertToCSV(words, includeSection, includeType, includeID, languages) 
     headers += includeSection ? `Section,${targetLang},${sourceLang}` : `${targetLang},${sourceLang}`;
     headers = includeType ? headers + ",Type" : headers;
     let csvContent = `\uFEFF${headers}\n`;
-    words.forEach(wordArray => {
-        let row = includeID ? `${generateRandomID()},` : '';
+    words.forEach((wordArray, index) => {
+        let row = includeID ? `${index + 1},` : ''; // Incrementing numeric ID
         row += includeSection ? wordArray.join(",") : wordArray.slice(1).join(",");
         row = includeType ? row : row.replace(/,([^,]*)$/, ''); // Remove type if not included
         csvContent += row + "\n";
