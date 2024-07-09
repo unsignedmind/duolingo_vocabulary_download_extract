@@ -5,4 +5,4 @@ https://duome.eu/vocabulary/de/es
 https://duome.eu/vocabulary/de/es/skills
 
 Here is a preview what the page looks like when the script has been executed
-![image](https://imgur.com/eMRSLmt)
+![image](https://i.imgur.com/eMRSLmt.png)
