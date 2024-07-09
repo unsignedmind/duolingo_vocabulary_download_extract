@@ -41,28 +41,36 @@ function extractWords() {
     return words;
 }
 
+// Function to generate a random ID
+function generateRandomID() {
+    return Math.random().toString(36).substr(2, 9);
+}
+
 // Function to convert array of words to CSV format
-function convertToCSV(words, includeSection, includeType, languages) {
+function convertToCSV(words, includeSection, includeType, includeID, languages) {
     const [sourceLang, targetLang] = languages;
-    let headers = includeSection ? `Section,${targetLang},${sourceLang}` : `${targetLang},${sourceLang}`;
+    let headers = includeID ? `ID,` : '';
+    headers += includeSection ? `Section,${targetLang},${sourceLang}` : `${targetLang},${sourceLang}`;
     headers = includeType ? headers + ",Type" : headers;
     let csvContent = `\uFEFF${headers}\n`;
     words.forEach(wordArray => {
-        let row = includeSection ? wordArray.join(",") : wordArray.slice(1).join(",");
+        let row = includeID ? `${generateRandomID()},` : '';
+        row += includeSection ? wordArray.join(",") : wordArray.slice(1).join(",");
         row = includeType ? row : row.replace(/,([^,]*)$/, ''); // Remove type if not included
         csvContent += row + "\n";
     });
     return csvContent;
 }
 
-// Function to create a download link for the CSV file using Data URI
-function createDownloadLink(csvContent, sectionName = "", includeSection = false, includeType = false) {
+// Function to create a download link for the CSV file using Blob
+function createDownloadLink(csvContent, sectionName = "", includeSection = false, includeType = false, includeID = false) {
+    let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    let link = document.createElement("a");
     const [sourceLang, targetLang] = getLanguagesFromURL();
     let fileName = sectionName ? 
-        `vocabulary_${sourceLang}_${targetLang}_${sectionName}_${includeSection ? 'withSection' : 'noSection'}_${includeType ? 'withType' : 'noType'}.csv` : 
-        `vocabulary_${sourceLang}_${targetLang}_${includeSection ? 'withSection' : 'noSection'}_${includeType ? 'withType' : 'noType'}.csv`;
-    let link = document.createElement("a");
-    link.setAttribute("href", 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent));
+        `vocabulary_${sourceLang}_${targetLang}_${sectionName}_${includeSection ? 'withSection' : 'noSection'}_${includeType ? 'withType' : 'noType'}_${includeID ? 'withID' : 'noID'}.csv` : 
+        `vocabulary_${sourceLang}_${targetLang}_${includeSection ? 'withSection' : 'noSection'}_${includeType ? 'withType' : 'noType'}_${includeID ? 'withID' : 'noID'}.csv`;
+    link.href = URL.createObjectURL(blob);
     link.setAttribute("download", fileName);
     link.innerText = sectionName ? `Download ${sectionName}` : "Download All";
     link.style.backgroundColor = "#20a8e9";
@@ -101,12 +109,14 @@ function appendLinkAndCheckboxesToSection(link, sectionCheckbox, typeCheckbox, s
 function main() {
     let languages = getLanguagesFromURL();
     let words = extractWords();
-    let fullLink = createDownloadLink(convertToCSV(words, true, true, languages), "", true, true);
+    let fullLink = createDownloadLink(convertToCSV(words, true, true, false, languages), "", true, true, false);
     let fullSectionCheckboxLabel = createCheckbox("all sections");
     let fullTypeCheckboxLabel = createCheckbox("type of word");
+    let fullIDCheckboxLabel = createCheckbox("ID");
     document.querySelector('h4').appendChild(fullLink);
     document.querySelector('h4').appendChild(fullSectionCheckboxLabel);
     document.querySelector('h4').appendChild(fullTypeCheckboxLabel);
+    document.querySelector('h4').appendChild(fullIDCheckboxLabel);
 
     // Create section-specific download links
     let sections = {};
@@ -129,7 +139,7 @@ function main() {
 
     for (let sectionName in sections) {
         let sectionWords = sections[sectionName].words;
-        let sectionLink = createDownloadLink(convertToCSV(sectionWords, false, true, languages), sectionName, false, true);
+        let sectionLink = createDownloadLink(convertToCSV(sectionWords, false, true, false, languages), sectionName, false, true, false);
         let sectionCheckboxLabel = createCheckbox(sectionName);
         let typeCheckboxLabel = createCheckbox("type of word");
         appendLinkAndCheckboxesToSection(sectionLink, sectionCheckboxLabel, typeCheckboxLabel, sections[sectionName].headerElement);
@@ -139,23 +149,28 @@ function main() {
             event.preventDefault();
             let includeSection = sectionCheckboxLabel.querySelector('input').checked;
             let includeType = typeCheckboxLabel.querySelector('input').checked;
-            let sectionCsvContent = convertToCSV(sectionWords, includeSection, includeType, languages);
+            let sectionCsvContent = convertToCSV(sectionWords, includeSection, includeType, false, languages);
+            let blob = new Blob([sectionCsvContent], { type: 'text/csv;charset=utf-8;' });
+            let fileName = `vocabulary_${languages[0]}_${languages[1]}_${sectionName}_${includeSection ? 'withSection' : 'noSection'}_${includeType ? 'withType' : 'noType'}_noID.csv`;
             let tempLink = document.createElement('a');
-            tempLink.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(sectionCsvContent));
-            tempLink.setAttribute('download', `vocabulary_${languages[0]}_${languages[1]}_${sectionName}_${includeSection ? 'withSection' : 'noSection'}_${includeType ? 'withType' : 'noType'}.csv`);
+            tempLink.href = URL.createObjectURL(blob);
+            tempLink.setAttribute('download', fileName);
             tempLink.click();
         });
     }
 
-    // Add event listener to the full download button to respect the all sections and type of word checkboxes
+    // Add event listener to the full download button to respect the all sections, type of word, and ID checkboxes
     fullLink.addEventListener('click', function (event) {
         event.preventDefault();
         let includeAllSections = fullSectionCheckboxLabel.querySelector('input').checked;
         let includeType = fullTypeCheckboxLabel.querySelector('input').checked;
-        let selectedCsvContent = convertToCSV(words, includeAllSections, includeType, languages);
+        let includeID = fullIDCheckboxLabel.querySelector('input').checked;
+        let selectedCsvContent = convertToCSV(words, includeAllSections, includeType, includeID, languages);
+        let blob = new Blob([selectedCsvContent], { type: 'text/csv;charset=utf-8;' });
+        let fileName = `vocabulary_${languages[0]}_${languages[1]}_${includeAllSections ? 'withSection' : 'noSection'}_${includeType ? 'withType' : 'noType'}_${includeID ? 'withID' : 'noID'}.csv`;
         let tempLink = document.createElement('a');
-        tempLink.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(selectedCsvContent));
-        tempLink.setAttribute('download', `vocabulary_${languages[0]}_${languages[1]}_${includeAllSections ? 'withSection' : 'noSection'}_${includeType ? 'withType' : 'noType'}.csv`);
+        tempLink.href = URL.createObjectURL(blob);
+        tempLink.setAttribute('download', fileName);
         tempLink.click();
     });
 }
